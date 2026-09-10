@@ -1,0 +1,70 @@
+# Analytics Events Single Source of Truth
+# Format: PostHog / iOS Events.swift / Web events.ts generator input
+
+version: 1.0.0
+events:
+  app_installed:
+    description: Triggered on very first app launch
+    properties:
+      platform: { type: string, enum: [ios, web] }
+      app_version: { type: string }
+      device_model: { type: string }
+      os_version: { type: string }
+
+  onboarding_completed:
+    description: User completed onboarding wizard
+    properties:
+      target_level: { type: string, enum: [A1, A2, B1, B2, C1, C2] }
+      daily_goal: { type: integer }
+      duration_seconds: { type: integer }
+
+  sign_in_completed:
+    description: User signed in successfully
+    properties:
+      method: { type: string, enum: [apple, email_otp] }
+      is_new_user: { type: boolean }
+
+  study_session_started:
+    description: User entered flashcard study screen
+    properties:
+      queue_count: { type: integer }
+      due_count: { type: integer }
+      new_count: { type: integer }
+      is_offline: { type: boolean }
+
+  card_reviewed:
+    description: Individual card rating selected
+    properties:
+      card_id: { type: string, format: uuid }
+      rating: { type: integer, enum: [1, 2, 3, 4] }
+      duration_ms: { type: integer }
+      state_before: { type: string, enum: [new, learning, review, relearning] }
+      is_offline: { type: boolean }
+
+  study_session_completed:
+    description: All queued cards reviewed for the session
+    properties:
+      cards_reviewed: { type: integer }
+      duration_seconds: { type: integer }
+      streak_days: { type: integer }
+      retention_rate: { type: number }
+
+  paywall_viewed:
+    description: Paywall screen shown to user
+    properties:
+      source: { type: string, enum: [limit_reached, banner, settings, locked_deck] }
+
+  subscription_purchased:
+    description: In-app purchase completed successfully
+    properties:
+      product_id: { type: string, enum: [shadow_pro_monthly, shadow_pro_yearly, shadow_pro_lifetime] }
+      currency: { type: string }
+      price: { type: number }
+      is_trial: { type: boolean }
+
+  dictionary_searched:
+    description: Search query executed on dictionary
+    properties:
+      query: { type: string }
+      results_count: { type: integer }
+      latency_ms: { type: integer }

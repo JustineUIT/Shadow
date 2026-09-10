@@ -1,0 +1,605 @@
+openapi: 3.1.0
+info:
+  title: Shadow API
+  version: 1.0.0
+  description: Single Source of Truth for Shadow Backend Go, iOS Swift Client, and Web React Frontend.
+
+servers:
+  - url: https://api.shadow.app/v1
+    description: Production API Server
+  - url: https://api-staging.shadow.app/v1
+    description: Staging API Server
+  - url: http://localhost:8080/v1
+    description: Local Development Server
+
+paths:
+  /version:
+    get:
+      summary: Get API and minimum supported client versions
+      operationId: getVersion
+      responses:
+        '200':
+          description: Version information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionResponse'
+
+  /healthz:
+    get:
+      summary: Liveness probe
+      operationId: getHealthz
+      responses:
+        '200':
+          description: Server is live
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+
+  /readyz:
+    get:
+      summary: Readiness probe
+      operationId: getReadyz
+      responses:
+        '200':
+          description: Server is ready to serve traffic
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+        '503':
+          description: Server database or dependencies are not ready
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+  /auth/apple:
+    post:
+      summary: Authenticate via Sign in with Apple
+      operationId: authApple
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppleAuthRequest'
+      responses:
+        '200':
+          description: Successful authentication
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+
+  /auth/otp/send:
+    post:
+      summary: Send one-time passcode to email
+      operationId: sendOtp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendOtpRequest'
+      responses:
+        '204':
+          description: Passcode sent
+        '429':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+
+  /auth/otp/verify:
+    post:
+      summary: Verify email OTP code
+      operationId: verifyOtp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyOtpRequest'
+      responses:
+        '200':
+          description: Successful verification
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+
+  /auth/refresh:
+    post:
+      summary: Refresh Access Token using Refresh Token Rotation
+      operationId: refreshToken
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: New tokens issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+
+  /auth/logout:
+    post:
+      summary: Revoke session and logout
+      operationId: logout
+      security:
+        - BearerAuth: []
+      responses:
+        '204':
+          description: Logged out successfully
+
+  /me:
+    get:
+      summary: Get current authenticated user profile
+      operationId: getMe
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          $ref: '#/components/responses/ProblemDetailsResponse'
+    patch:
+      summary: Update user settings
+      operationId: updateMe
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+
+  /study/queue:
+    get:
+      summary: Get daily cards to review and learn
+      operationId: getStudyQueue
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: X-Timezone
+          in: header
+          required: true
+          schema:
+            type: string
+            example: "Asia/Ho_Chi_Minh"
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudyQueueResponse'
+
+  /study/reviews:
+    post:
+      summary: Submit flashcard review results
+      operationId: submitReviews
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitReviewsRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitReviewsResponse'
+
+  /study/stats:
+    get:
+      summary: Get study streak and retention stats
+      operationId: getStudyStats
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudyStatsResponse'
+
+  /dictionary/search:
+    get:
+      summary: Search dictionary headwords with prefix and trigram matching
+      operationId: searchDictionary
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DictionarySearchResponse'
+
+  /billing/webhook:
+    post:
+      summary: RevenueCat In-App Purchase server webhook
+      operationId: handleBillingWebhook
+      security:
+        - WebhookSecretAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Webhook processed
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    WebhookSecretAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+
+  responses:
+    ProblemDetailsResponse:
+      description: RFC 7807 Standard Error Response
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+  schemas:
+    ProblemDetails:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - code
+        - request_id
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        code:
+          type: string
+          example: "AUTH_UNAUTHORIZED"
+        detail:
+          type: string
+        instance:
+          type: string
+        request_id:
+          type: string
+          format: uuid
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              reason:
+                type: string
+
+    StatusResponse:
+      type: object
+      required:
+        - status
+        - timestamp
+      properties:
+        status:
+          type: string
+          example: "ok"
+        timestamp:
+          type: string
+          format: date-time
+
+    VersionResponse:
+      type: object
+      required:
+        - version
+        - min_ios_version
+        - force_update
+      properties:
+        version:
+          type: string
+        min_ios_version:
+          type: string
+        force_update:
+          type: boolean
+
+    AppleAuthRequest:
+      type: object
+      required:
+        - identity_token
+      properties:
+        identity_token:
+          type: string
+        full_name:
+          type: string
+
+    SendOtpRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+
+    VerifyOtpRequest:
+      type: object
+      required:
+        - email
+        - code
+      properties:
+        email:
+          type: string
+          format: email
+        code:
+          type: string
+          minLength: 6
+          maxLength: 6
+
+    RefreshTokenRequest:
+      type: object
+      properties:
+        refresh_token:
+          type: string
+
+    AuthResponse:
+      type: object
+      required:
+        - access_token
+        - expires_in
+        - token_type
+        - user
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        expires_in:
+          type: integer
+        token_type:
+          type: string
+          example: "Bearer"
+        user:
+          $ref: '#/components/schemas/UserProfile'
+
+    UserProfile:
+      type: object
+      required:
+        - id
+        - display_name
+        - locale
+        - timezone
+        - level
+        - daily_goal
+        - role
+        - is_pro
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        display_name:
+          type: string
+        avatar_url:
+          type: string
+          format: uri
+        locale:
+          type: string
+        timezone:
+          type: string
+        level:
+          type: string
+          enum: [A1, A2, B1, B2, C1, C2]
+        daily_goal:
+          type: integer
+        role:
+          type: string
+          enum: [user, admin]
+        is_pro:
+          type: boolean
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        display_name:
+          type: string
+        daily_goal:
+          type: integer
+        level:
+          type: string
+          enum: [A1, A2, B1, B2, C1, C2]
+        timezone:
+          type: string
+
+    StudyCard:
+      type: object
+      required:
+        - id
+        - front
+        - back
+        - state
+        - stability
+        - difficulty
+      properties:
+        id:
+          type: string
+          format: uuid
+        front:
+          type: string
+        back:
+          type: string
+        example:
+          type: string
+        audio_url:
+          type: string
+        state:
+          type: string
+          enum: [new, learning, review, relearning]
+        stability:
+          type: number
+        difficulty:
+          type: number
+
+    StudyQueueResponse:
+      type: object
+      required:
+        - cards
+        - remaining_due
+        - remaining_new
+      properties:
+        cards:
+          type: array
+          items:
+            $ref: '#/components/schemas/StudyCard'
+        remaining_due:
+          type: integer
+        remaining_new:
+          type: integer
+
+    ReviewItem:
+      type: object
+      required:
+        - card_id
+        - client_review_id
+        - rating
+        - duration_ms
+        - reviewed_at
+      properties:
+        card_id:
+          type: string
+          format: uuid
+        client_review_id:
+          type: string
+          format: uuid
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 4
+        duration_ms:
+          type: integer
+        reviewed_at:
+          type: string
+          format: date-time
+
+    SubmitReviewsRequest:
+      type: object
+      required:
+        - reviews
+      properties:
+        reviews:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReviewItem'
+
+    SubmitReviewsResponse:
+      type: object
+      required:
+        - processed_count
+      properties:
+        processed_count:
+          type: integer
+
+    StudyStatsResponse:
+      type: object
+      required:
+        - streak_days
+        - total_reviewed
+        - retention_rate
+      properties:
+        streak_days:
+          type: integer
+        total_reviewed:
+          type: integer
+        retention_rate:
+          type: number
+
+    DictionaryItem:
+      type: object
+      required:
+        - id
+        - headword
+        - pos
+        - ipa
+      properties:
+        id:
+          type: string
+          format: uuid
+        headword:
+          type: string
+        pos:
+          type: string
+        ipa:
+          type: string
+        cefr:
+          type: string
+        freq_rank:
+          type: integer
+        audio_url:
+          type: string
+
+    DictionarySearchResponse:
+      type: object
+      required:
+        - results
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/DictionaryItem'

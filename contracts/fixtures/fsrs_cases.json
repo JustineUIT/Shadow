@@ -1,0 +1,86 @@
+{
+  "version": "4.5",
+  "default_parameters": {
+    "w": [
+      0.40255, 1.18385, 3.173, 15.69105,
+      7.1949, 0.5345, 1.4604, 0.0046,
+      1.54575, 0.1192, 1.01925,
+      1.9395, 0.11, 0.29605, 0.22695,
+      0.2315, 2.9898
+    ],
+    "request_retention": 0.9,
+    "maximum_interval": 36500
+  },
+  "test_cases": [
+    {
+      "case_id": "TC_INIT_AGAIN",
+      "description": "Initial rating Again on new card",
+      "initial_state": "new",
+      "rating": 1,
+      "elapsed_days": 0,
+      "expected_state": "learning",
+      "expected_stability": 0.40255,
+      "expected_difficulty": 7.1949,
+      "expected_scheduled_days": 0.0
+    },
+    {
+      "case_id": "TC_INIT_HARD",
+      "description": "Initial rating Hard on new card",
+      "initial_state": "new",
+      "rating": 2,
+      "elapsed_days": 0,
+      "expected_state": "learning",
+      "expected_stability": 1.18385,
+      "expected_difficulty": 6.6604,
+      "expected_scheduled_days": 1.0
+    },
+    {
+      "case_id": "TC_INIT_GOOD",
+      "description": "Initial rating Good on new card",
+      "initial_state": "new",
+      "rating": 3,
+      "elapsed_days": 0,
+      "expected_state": "learning",
+      "expected_stability": 3.173,
+      "expected_difficulty": 5.1259,
+      "expected_scheduled_days": 3.0
+    },
+    {
+      "case_id": "TC_INIT_EASY",
+      "description": "Initial rating Easy on new card",
+      "initial_state": "new",
+      "rating": 4,
+      "elapsed_days": 0,
+      "expected_state": "review",
+      "expected_stability": 15.69105,
+      "expected_difficulty": 3.5914,
+      "expected_scheduled_days": 16.0
+    },
+    {
+      "case_id": "TC_REPEAT_GOOD",
+      "description": "Review card rated Good on time",
+      "initial_state": "review",
+      "rating": 3,
+      "elapsed_days": 3,
+      "current_stability": 3.173,
+      "current_difficulty": 5.1259,
+      "expected_state": "review",
+      "expected_stability": 8.7421,
+      "expected_difficulty": 5.1259,
+      "expected_scheduled_days": 9.0
+    },
+    {
+      "case_id": "TC_LAPSE_AGAIN",
+      "description": "Review card lapsed (Again)",
+      "initial_state": "review",
+      "rating": 1,
+      "elapsed_days": 10,
+      "current_stability": 8.7421,
+      "current_difficulty": 5.1259,
+      "expected_state": "relearning",
+      "expected_stability": 1.9423,
+      "expected_difficulty": 7.4215,
+      "expected_scheduled_days": 0.0
+    }
+  ]
+}
