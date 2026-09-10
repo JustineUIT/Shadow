@@ -11,6 +11,10 @@
 | `01-CONTRACTS.md` | Trước khi viết bất kỳ code nào chạm biên giới giữa 2 hệ | Tất cả |
 | `02-DESIGN-SYSTEM.md` | Trước khi viết UI đầu tiên (iOS hoặc web) | iOS, Web, Design |
 | `03-MEASUREMENT-TOOLS.md` | Cuối mỗi phase để lấy số liệu thật | QA, SRE |
+| `04-CURRENT-STATE.md` | Muốn biết repo thực tế đang ở đâu so với kế hoạch; sau mỗi phase cập nhật | Architect |
+| `05-WBS-PHASE-0.md` | Bắt tay làm Phase 0: từng subtask có lệnh, output, DoD | Tất cả |
+| `adr/0001–0007` | Muốn hiểu **vì sao** chọn stack này; trước khi đổi bất kỳ D-xx | Architect |
+| `evidence/SCORECARD.md` | Điền số sau mỗi lần đo; ô trống = chưa đo | QA |
 | `checklists/01-ios-swift.md` | Cho AI check, rồi tự re-check | iOS |
 | `checklists/02-web-react.md` | | Web |
 | `checklists/03-backend-go.md` | | Backend |
@@ -58,6 +62,7 @@
 | D26 | TTS | ElevenLabs / OpenAI TTS / Piper | **Piper self-host pre-render → R2 (bulk); API TTS chỉ cho on-demand** | Chi phí ~0, audio cache vĩnh viễn |
 | D27 | iOS CI | GitHub Actions macOS / Xcode Cloud | **Xcode Cloud (25 giờ/tháng free)** | GitHub macOS runner tính x10 phút, 2000 phút = 200 phút thật |
 | D28 | Web token | localStorage / memory + cookie | **Access token trong memory; refresh token là httpOnly cookie scope `api.` path `/v1/auth/refresh`** | Không lộ refresh cho XSS; same-site nên cookie hoạt động |
+| D29 | Repo layout (thực tế repo `Shadow` có Next.js ở root) | Giữ Next ở root / move vào `web/` / tách repo | **Move vào `web/`, root chỉ `package.json` mỏng delegate + `pnpm-workspace.yaml` + `Makefile`** | Khớp mọi path trong docs; v0 preview và Pages vẫn chạy nhờ root script `dev`. Chi tiết `04-CURRENT-STATE.md` §3, ADR 0007 |
 
 ---
 
@@ -76,7 +81,8 @@
 ## 3. Monorepo và file output kỳ vọng
 
 ```
-englishapp/
+shadow/                              # = repo root GitHub "JustineUIT/Shadow"
+├── package.json  pnpm-workspace.yaml  Makefile  .editorconfig  CODEOWNERS   # root mỏng (D29)
 ├── contracts/
 │   ├── openapi.yaml                 # D02 source of truth API
 │   ├── tokens/tokens.json           # D21 design tokens (DTCG format)
@@ -318,7 +324,7 @@ Mục tiêu: chốt hướng, dựng khung để 3 phía không lệch nhau ngay
 
 ## 10. Thứ tự đọc và làm
 
-1. Đọc `01-CONTRACTS.md` toàn bộ. Nếu có gì chưa rõ trong contract, sửa contract trước, không sửa code.
+1. Đọc `04-CURRENT-STATE.md` để biết repo đang ở đâu, rồi `01-CONTRACTS.md` toàn bộ. Nếu có gì chưa rõ trong contract, sửa contract trước, không sửa code.
 2. Đọc `02-DESIGN-SYSTEM.md`, tạo `tokens.json`.
-3. Làm Phase 0. Chỉ sang Phase 1 khi waitlist đạt ngưỡng.
+3. Làm Phase 0 theo `05-WBS-PHASE-0.md` (bắt đầu từ P0-04 repo layout). Chỉ sang Phase 1 khi waitlist đạt ngưỡng.
 4. Với mỗi phase: làm → chạy tools trong `03-MEASUREMENT-TOOLS.md` → cho AI check bằng checklist → tự re-check `[M]` → điền scorecard → đóng phase.
